@@ -1,0 +1,6 @@
+/* let wide display equations scroll horizontally instead of overflowing the page */
+div.math, .math-wrapper, mjx-container[display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}

@@ -1,0 +1,11 @@
+format: jb-book
+root: intro
+chapters:
+  - file: 01_hypothesis_testing_and_likelihood
+  - file: 02_model_selection_and_bootstrap
+  - file: 03_probability_foundations
+  - file: 04_bayesian_inference
+  - file: 05_priors
+  - file: 06_mcmc
+  - file: 07_advanced_examples
+  - file: appendix
