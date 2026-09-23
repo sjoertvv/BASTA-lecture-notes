@@ -2,11 +2,11 @@
 
 *Lecture notes for BASTA (Leiden Observatory)*
 
-These are the lecture notes of the course **Bayesian Statistics for Astrophysics** (BASTA), a 3 EC elective in the Leiden astronomy bachelor. They were first written by the class of 2024, one chapter per group, and have since been revised and extended by the teaching team. They follow the six lectures of the course, and they are meant to be read alongside them: the lectures introduce the ideas and the notes work them out, with derivations, runnable code and questions at the level of the exam.
+These are the lecture notes of the course **Bayesian Statistics for Astrophysics** (BASTA). They were first written by the class of 2024, one chapter per group, and have since been revised and extended by the teaching team (special thanks to Timo Kist and Luka Slagter). 
 
 ## What this course is about
 
-Almost every astronomer fits models to data. Some do so by minimizing $\chi^2$, perhaps even with a black-box routine, reading off the uncertainties it returns, and hoping for the best. This course is about replacing hope with understanding. The central idea, borrowed from the article by Hogg, Bovy & Lang (2010) that we follow closely, is the **generative model**: a quantitative description of how your data could have been produced, including the noise. Once you have that, everything else follows without arbitrary choices. The likelihood tells you how well the parameters explain the data; Bayes' theorem turns it into a probability distribution for the parameters; marginalization gets rid of the parameters you do not care about; and Markov chain Monte Carlo lets a computer do the integrals. Along the way you will see where the classical tools (hypothesis tests, least squares, bootstrap, information criteria) come from, when they work, and when they fail.
+Almost every astronomer fits models to data. Some do so by minimizing $\chi^2$, perhaps even with a black-box routine, reading off the uncertainties it returns, and hoping for the best. This course is about replacing hope with understanding. The central idea, borrowed from the article by Hogg, Bovy & Lang (2010) that we follow closely, is the **generative model**: a quantitative description of how your data could have been produced, including the noise. Once you have that, everything else follows without arbitrary choices. The likelihood tells you how well the parameters explain the data; Bayes' theorem turns it into a probability distribution for the parameters; marginalization gets rid of the parameters you do not care about; and Markov chain Monte Carlo will give you the results (if you have a large enough computer). Along the way we will compare to the classical tools (hypothesis tests, least squares, bootstrap, information criteria).
 
 
 ## How the notes are organized
@@ -31,7 +31,7 @@ Each chapter starts with a list of **goals**, contains **runnable code** that yo
 
 ## Relation to the rest of the course
 
-The course has three components: the lectures and werkcolleges, a **hand-in assignment** (a full Bayesian analysis of the light curve of a real tidal disruption event, 50% of the grade), and a **written exam** (50%). These notes support both. The methods in the assignment (least squares with and without $\chi^2$ rescaling, bootstrap, MCMC with an extra variance parameter, model comparison, mixture models) are all introduced here, on different data, so that you can adapt the code rather than copy it. The exam is pen-and-paper: writing down likelihoods and posteriors, deriving simple results, sketching distributions, and explaining what a piece of MCMC code does or does not do. The "Test yourself" questions and the werkcollege exercises are the best preparation; the full exams of previous years are also available (on Brightspace).
+The course has three components: the lectures and werkcolleges, a **hand-in assignment** (a full Bayesian analysis of the light curve of a real tidal disruption event, 50% of the grade), and a **written exam** (50%). These notes support both. The methods in the assignment are all introduced here, on different data, so that you can adapt the code rather than copy it. The exam is pen-and-paper: writing down likelihoods and posteriors, deriving simple results, sketching distributions, and explaining what a piece of MCMC code does or does not do. The "Test yourself" questions and the werkcollege exercises are the best preparation; the full exams of previous years are also available (on Brightspace).
 
 ## Notation
 
@@ -56,7 +56,7 @@ We try to use one set of symbols throughout. Different books use different conve
 
 ## Software
 
-The code in these notes uses Python 3 with `numpy`, `scipy` and `matplotlib`, plus [`emcee`](https://emcee.readthedocs.io) for MCMC and [`corner`](https://corner.readthedocs.io) for corner plots (Chapters 6 and 7). Every chapter is a Jupyter notebook that can be downloaded from the page (the download button at the top) and run from start to finish; the random seeds are fixed, so you should reproduce the figures exactly. Do change the seeds and the numbers: watch what happens when $N=3$ becomes $N=30$, or when the prior is made narrower.
+The code in these notes uses Python 3 with `numpy`, `scipy` and `matplotlib`, plus [`emcee`](https://emcee.readthedocs.io) for MCMC and [`corner`](https://corner.readthedocs.io) for corner plots (Chapters 6 and 7). Every chapter is a Jupyter notebook that can be downloaded from the page and run from start to finish; the random seeds are fixed, so you should reproduce the figures exactly. Do change the seeds and the numbers: watch what happens when $N=3$ becomes $N=30$, or when the prior is made narrower.
 
 ## Literature
 
