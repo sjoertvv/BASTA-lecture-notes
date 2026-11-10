@@ -133,7 +133,6 @@ N = 100
 mu_true, eps_true = 1000, 15
 F_true = rng.normal(mu_true, eps_true, size=N)
 y = rng.poisson(F_true)
-sigma_y = np.sqrt(y)
 
 mu_grid = np.linspace(960, 1040, 801)
 log_like = np.array([np.sum(stats.poisson.logpmf(y, mu)) for mu in mu_grid])   # step 2
@@ -221,24 +220,26 @@ Sometimes the extra scatter is better described as a fraction $f$ of the model v
 
 ### Maximum likelihood, AIC and BIC
 
-For the Blinky data the model is a constant, $m(x_i,\theta) = \mu$, so the statistical model has two parameters, $(\mu, \epsilon)$, and the log-likelihood is Eq. {eq}`eq:loglike-eps` with $\sigma_{y,i} = \sqrt{y_i}$. We first maximize it numerically and check with the information criteria whether the extra parameter is warranted.
+For the Blinky data the model is a constant, $m(x_i,\theta) = \mu$, so the statistical model has two parameters, $(\mu, \epsilon)$. One detail deserves attention. Blinky's data points do not come with reported uncertainties: the uncertainty follows from the generative model, because for Poisson counts the variance equals the rate, so $\sigma_{y,i}^2 = \mu$ and the total variance is $s_i^2 = \mu + \epsilon^2$. In Chapter 1 we used $\sigma_{y,i} = \sqrt{y_i}$ instead, the variance estimated from each point itself. At a thousand counts the two choices give the same answer, but at low counts $\sqrt{y_i}$ biases the fit: a point that happens to come out low gets a small error bar and a large weight, a point that comes out high gets a small weight, and the fitted mean is pulled down (try it with `mu_true = 5`). The rule is that the variance in the likelihood is a property of the *model*, not of the realization; `curve_fit` with $\sigma_{y,i} = \sqrt{y_i}$ is the same mistake in disguise. We first maximize the likelihood numerically and check with the information criteria whether the extra parameter is warranted.
 
 ```{code-cell} ipython3
-def log_like_eps(theta, y, sigma_y):
-    """Gaussian log-likelihood for a constant mean mu with extra variance eps^2 (Eq. loglike-eps)"""
+def log_like_eps(theta, y):
+    """Gaussian log-likelihood for Poisson counts y with mean mu and extra variance eps^2 (Eq. loglike-eps with sigma_y^2 = mu)"""
     mu, eps = theta
-    s2 = sigma_y**2 + eps**2
+    if mu <= 0:
+        return -np.inf
+    s2 = mu + eps**2
     return -0.5 * np.sum(np.log(2 * np.pi * s2) + (y - mu)**2 / s2)
 
-neg_log_like = lambda theta: -log_like_eps(theta, y, sigma_y)
+neg_log_like = lambda theta: -log_like_eps(theta, y)
 res = optimize.minimize(neg_log_like, x0=[900, 5], method="Nelder-Mead")
 mu_hat, eps_hat = res.x
 print(f"maximum likelihood: mu = {mu_hat:.1f}, eps = {eps_hat:.1f}")
 
-w = 1 / sigma_y**2
-mu_wmean = np.sum(w * y) / np.sum(w)                           # the best fit without intrinsic scatter
-ll_0 = log_like_eps([mu_wmean, 0.0], y, sigma_y)
-ll_1 = log_like_eps([mu_hat, eps_hat], y, sigma_y)
+res_0 = optimize.minimize_scalar(lambda m: -log_like_eps([m, 0.0], y), bounds=(900, 1100), method="bounded")
+mu_0 = res_0.x                                                 # the best fit without intrinsic scatter
+ll_0 = log_like_eps([mu_0, 0.0], y)
+ll_1 = log_like_eps([mu_hat, eps_hat], y)
 print(f"AIC: {-2*ll_0 + 2*1:.1f} (eps=0)  ->  {-2*ll_1 + 2*2:.1f} (eps free);  change {-2*ll_1 + 4 - (-2*ll_0 + 2):+.1f}")
 print(f"BIC: {-2*ll_0 + np.log(N)*1:.1f} (eps=0)  ->  {-2*ll_1 + np.log(N)*2:.1f} (eps free);  change {-2*ll_1 + 2*np.log(N) - (-2*ll_0 + np.log(N)):+.1f}")
 delta = -2 * ll_0 - (-2 * ll_1)
@@ -256,7 +257,7 @@ mu_grid = np.linspace(970, 1030, 241)
 eps_grid = np.linspace(0, 45, 181)
 MU, EPS = np.meshgrid(mu_grid, eps_grid, indexing="ij")
 
-log_post = np.array([[log_like_eps([m, e], y, sigma_y) for e in eps_grid] for m in mu_grid])  # flat prior: log p(theta) = const
+log_post = np.array([[log_like_eps([m, e], y) for e in eps_grid] for m in mu_grid])  # flat prior: log p(theta) = const
 post2d = np.exp(log_post - log_post.max())
 post2d /= np.trapezoid(np.trapezoid(post2d, eps_grid, axis=1), mu_grid)                       # normalize
 
@@ -326,7 +327,7 @@ ax.set_xlabel(r"$\mu$"); ax.legend();
 
 *"Strictly speaking, the posterior distribution is our answer."* But papers need numbers. Common ways to summarize a posterior:
 
-* the posterior **median** (or mean, or mode/MAP) as the point estimate, with the **equal-tailed 68.3% credible interval** as the uncertainty, written as $\mu = 1000 \pm 4$ or, for asymmetric intervals, $\epsilon = 18^{+5}_{-6}$;
+* the posterior **median** (or mean, or mode/MAP) as the point estimate, with the **equal-tailed 68.3% credible interval** as the uncertainty, written as $\mu = 1001 \pm 4$ or, for asymmetric intervals, $\epsilon = 17^{+5}_{-7}$;
 * an **upper limit** when the posterior piles up against a boundary: "$\epsilon < 31$ (95%)";
 * for joint constraints, a **contour plot** or a *corner plot* (Chapter 6) of the two-dimensional marginal posteriors;
 * a set of **posterior samples**, so that any derived quantity can be computed with its full uncertainty (Chapter 6).

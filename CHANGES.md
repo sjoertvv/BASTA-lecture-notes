@@ -127,6 +127,16 @@ per-point outlier probability; referenced from Chapter 7.
   cited instead. URLs (arXiv / DOI / free PDF) added to every reference list.
 * The photon-counts dataset is now the star "Blinky".
 
+## Update (November 2026)
+* Blinky with intrinsic scatter (Chapters 4 and 6): the likelihood now uses the Poisson variance of the
+  *model*, s_i^2 = mu + eps^2, instead of sigma_{y,i} = sqrt(y_i). The two agree at 1000 counts, but
+  sqrt(y_i) biases the mean low at low counts (low points get small error bars); a paragraph in 4.4 explains
+  this, and a remark after the chi2 test in Chapter 1 flags the same issue. Numbers in 4.4 and 6.5 changed
+  slightly (eps median 17 instead of 18).
+* Metropolis speedrun (6.2) rewritten as a plain loop that follows steps 0-3 of the algorithm, with an
+  explicit else-branch for rejection; the function version (returning only the chain) is introduced in the
+  tuning section where it is first needed.
+
 ## Build
 * Long two-part equations split over several lines; `_static/custom.css` lets any remaining
   wide equation scroll horizontally instead of overflowing.

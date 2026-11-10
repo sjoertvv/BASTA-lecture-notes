@@ -115,7 +115,7 @@ plt.tight_layout()
 
 After one flip the posterior is essentially the prior; after 100 flips the data (65% heads) have overruled the prior belief of a fair coin. This is the general behaviour: the prior matters when the data are few, and becomes irrelevant when the data are many.
 
-## 5.5 Two conjugate pairs you should know
+## 5.5 Two common conjugates
 
 ### Gaussian likelihood, Gaussian prior
 

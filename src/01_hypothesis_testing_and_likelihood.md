@@ -192,7 +192,7 @@ ax.set_xlabel(r"$\chi^2/$dof"); ax.set_ylabel("probability density")
 ax.set_title(f"p-value = {p_value_chi2:.3f}"); ax.legend();
 ```
 
-Both test statistics agree: the data are unlikely under $H_0$, with $p$ of order $10^{-2}$, which we may call "$2\sigma$ evidence" for variability. That is worth reporting and worth following up, but it is not a discovery. Notice also what the test does *not* tell us: how variable the source is. In Chapter {ref}`4 <ch:inference>` we replace the yes/no question by a parameter, the intrinsic scatter $\epsilon$, and measure it.
+Both test statistics agree: the data are unlikely under $H_0$, with $p$ of order $10^{-2}$, which we may call "$2\sigma$ evidence" for variability. (A caveat on TS 2: we used $\sigma_{y,i} = \sqrt{y_i}$, the uncertainty estimated from each data point itself. Under $H_0$ the variance of every point is the *same* number, the rate $\lambda$, so the consistent choice is $\sigma_{y,i}^2 = \hat\lambda$. At a thousand counts the difference is negligible; at low counts $\sqrt{y_i}$ gives the low points too much weight and biases the fit. Chapter {ref}`4 <ch:inference>` returns to this.) That is worth reporting and worth following up, but it is not a discovery. Notice also what the test does *not* tell us: how variable the source is. In Chapter {ref}`4 <ch:inference>` we replace the yes/no question by a parameter, the intrinsic scatter $\epsilon$, and measure it.
 
 ```{admonition} One-sided or two-sided?
 :class: note
@@ -340,7 +340,7 @@ You have two data points and want to fit a line. Can you? What is $\chi^2$ and w
 *Answers:* Yes, a line through two points always exists, so $\chi^2 = 0$ and dof $= 0$. With unknown uncertainties there is no information about the scatter at all, so no uncertainty on the slope can be estimated. With known $\sigma_{y,i}$ the uncertainty on the slope follows from propagating the two uncertainties. With three points, dof $=1$ and the residual of the third point gives a (very noisy) handle on the scatter.
 ```
 
-### Example: fitting a straight line to real-ish data
+### Example: fitting a straight line to data
 
 We use the dataset of Hogg et al. (2010), Table 1, and follow their Exercise 1: fit points 5–20 (we deal with points 1–4, the outliers, in Chapter {ref}`7 <ch:advanced>`). The uncertainties $\sigma_{y,i}$ are given and we believe them, so we tell `curve_fit` so with `absolute_sigma=True`.
 

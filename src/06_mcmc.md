@@ -39,7 +39,6 @@ N = 100
 mu_true, eps_true = 1000, 15
 F_true = rng_data.normal(mu_true, eps_true, size=N)
 y = rng_data.poisson(F_true)
-sigma_y = np.sqrt(y)
 
 rng = np.random.default_rng(6)          # a separate generator for the samplers in this chapter
 np.random.seed(6)                       # emcee draws from numpy's global random state
@@ -108,21 +107,22 @@ def log_post_speed(mu):
     """log posterior for the mean of y (flat prior, Gaussian likelihood)"""
     return -0.5 * np.sum((y_speed - mu)**2 / sigma_speed**2)
 
-def metropolis(log_post, theta0, n_steps, proposal_width, rng):
-    """Metropolis algorithm with a Gaussian proposal; returns the chain and the acceptance fraction"""
-    chain = np.zeros(n_steps)
-    theta, lp = theta0, log_post(theta0)
-    n_accept = 0
-    for t in range(n_steps):
-        theta_prop = theta + rng.normal(0, proposal_width)          # step 1: propose
-        lp_prop = log_post(theta_prop)
-        if np.log(rng.uniform()) < lp_prop - lp:                    # steps 2+3: accept with probability min(1, r)
-            theta, lp = theta_prop, lp_prop
-            n_accept += 1
-        chain[t] = theta                                            # (rejected: the old value is repeated)
-    return chain, n_accept / n_steps
+n_steps = 5000
+proposal_width = 1.0
 
-chain, acc = metropolis(log_post_speed, theta0=10.0, n_steps=5000, proposal_width=1.0, rng=rng)
+chain = np.zeros(n_steps)
+chain[0] = 10.0                                                    # step 0: start somewhere
+
+for t in range(1, n_steps):
+    mu_current = chain[t - 1]
+    mu_proposed = mu_current + rng.normal(0, proposal_width)       # step 1: propose a new value
+    log_r = log_post_speed(mu_proposed) - log_post_speed(mu_current)   # step 2: ratio of the posterior densities
+    if np.log(rng.uniform()) < log_r:                              # step 3: accept with probability min(1, r) ...
+        chain[t] = mu_proposed
+    else:                                                          # ... otherwise reject: repeat the old value
+        chain[t] = mu_current
+
+acc = np.mean(chain[1:] != chain[:-1])                             # fraction of steps that were accepted
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 axs[0].plot(chain, lw=0.5); axs[0].axvspan(0, 50, color="red", alpha=0.15, label="burn-in")
@@ -135,16 +135,34 @@ axs[1].set_xlabel(r"$\mu$"); axs[1].legend()
 print(f"acceptance fraction {acc:.2f};  chain mean {chain[burn:].mean():.3f}, std {chain[burn:].std():.3f}  (expected 2.000, 0.577)")
 ```
 
-Fifteen lines of code, and the histogram of the chain reproduces the posterior. Note the two phases in the trace: the chain starts far away (at $\mu_0 = 10$), walks towards the region of high posterior probability in a few dozen steps, and then fluctuates around it. The first phase is called the **burn-in**; those samples are not drawn from the posterior and must be discarded before making histograms.
+Ten lines of code, one per step of the algorithm, and the histogram of the chain reproduces the posterior. Note the two phases in the trace: the chain starts far away (at $\mu_0 = 10$), walks towards the region of high posterior probability in a few dozen steps, and then fluctuates around it. The first phase is called the **burn-in**; those samples are not drawn from the posterior and must be discarded before making histograms.
 
 ### Tuning the proposal: acceptance rate and autocorrelation
 
-The width $s$ of the proposal distribution is the one knob of the algorithm, and it matters.
+The width $s$ of the proposal distribution is the one knob of the algorithm, and it matters. To try several widths we wrap the loop above in a function (same code, with the posterior and the starting point as arguments).
 
 ```{code-cell} ipython3
+def metropolis(log_post, theta0, n_steps, proposal_width, rng):
+    """the Metropolis loop of the speedrun; returns the chain"""
+    chain = np.zeros(n_steps)
+    chain[0] = theta0
+    for t in range(1, n_steps):
+        theta_current = chain[t - 1]
+        theta_proposed = theta_current + rng.normal(0, proposal_width)
+        log_r = log_post(theta_proposed) - log_post(theta_current)
+        if np.log(rng.uniform()) < log_r:
+            chain[t] = theta_proposed
+        else:
+            chain[t] = theta_current
+    return chain
+
+def acceptance_fraction(chain):
+    return np.mean(chain[1:] != chain[:-1])
+
 fig, axs = plt.subplots(3, 1, figsize=(9, 7), sharex=True)
 for ax, width in zip(axs, [0.05, 1.0, 30.0]):
-    ch, acc = metropolis(log_post_speed, theta0=2.0, n_steps=2000, proposal_width=width, rng=rng)
+    ch = metropolis(log_post_speed, theta0=2.0, n_steps=2000, proposal_width=width, rng=rng)
+    acc = acceptance_fraction(ch)
     ax.plot(ch, lw=0.7); ax.set_ylabel(r"$\mu$")
     ax.set_title(f"proposal width {width}: acceptance fraction {acc:.2f}", fontsize=10)
 axs[-1].set_xlabel("step"); plt.tight_layout()
@@ -169,7 +187,7 @@ def autocorr(chain, max_lag):
 
 fig, ax = plt.subplots()
 for width in [0.05, 1.0, 30.0]:
-    ch, _ = metropolis(log_post_speed, theta0=2.0, n_steps=50000, proposal_width=width, rng=rng)
+    ch = metropolis(log_post_speed, theta0=2.0, n_steps=50000, proposal_width=width, rng=rng)
     tau = emcee.autocorr.integrated_time(ch)[0]
     ax.plot(autocorr(ch, 300), label=f"proposal width {width}: τ ≈ {tau:.0f} steps")
 ax.axhline(0, color="k", lw=1); ax.set_xlabel(r"lag $\ell$"); ax.set_ylabel(r"autocorrelation $\rho(\ell)$"); ax.legend();
@@ -233,12 +251,12 @@ so the proposal is a random *stretch* of the current displacement between two wa
 
 ## 6.5 Worked example: mean and intrinsic scatter of Blinky
 
-We sample the posterior of $(\mu, \epsilon)$ for the Blinky data, which we computed on a grid in Chapter 4, so we can check the result. The likelihood is Eq. {eq}`eq:loglike-eps`, the priors are flat with $\epsilon \geq 0$.
+We sample the posterior of $(\mu, \epsilon)$ for the Blinky data, which we computed on a grid in Chapter 4, so we can check the result. The likelihood is Eq. {eq}`eq:loglike-eps` with the Poisson variance $\sigma_{y,i}^2 = \mu$ taken from the model (Section 4.4), the priors are flat with $\epsilon \geq 0$.
 
 ```{code-cell} ipython3
-def log_likelihood(theta, y, sigma_y):
+def log_likelihood(theta, y):
     mu, eps = theta
-    s2 = sigma_y**2 + eps**2
+    s2 = mu + eps**2                          # Poisson variance of the counts, plus the intrinsic variance
     return -0.5 * np.sum(np.log(2 * np.pi * s2) + (y - mu)**2 / s2)
 
 def log_prior(theta):
@@ -247,19 +265,19 @@ def log_prior(theta):
         return -np.inf
     return 0.0
 
-def log_posterior(theta, y, sigma_y):
+def log_posterior(theta, y):
     lp = log_prior(theta)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + log_likelihood(theta, y, sigma_y)
+    return lp + log_likelihood(theta, y)
 
 # start the walkers in a small ball around the maximum-likelihood solution
-theta_ml = optimize.minimize(lambda th: -log_posterior(th, y, sigma_y), x0=[900, 5], method="Nelder-Mead").x
+theta_ml = optimize.minimize(lambda th: -log_posterior(th, y), x0=[900, 5], method="Nelder-Mead").x
 n_walkers, n_dim = 32, 2
 p0 = theta_ml + np.array([1.0, 1.0]) * rng.normal(size=(n_walkers, n_dim))
 p0[:, 1] = np.abs(p0[:, 1])                # keep eps positive
 
-sampler = emcee.EnsembleSampler(n_walkers, n_dim, log_posterior, args=(y, sigma_y))
+sampler = emcee.EnsembleSampler(n_walkers, n_dim, log_posterior, args=(y,))
 sampler.run_mcmc(p0, 3000, progress=False);
 ```
 
@@ -323,7 +341,7 @@ B = 2000
 theta_boot = np.zeros((B, 2))
 for b in range(B):
     idx = rng.integers(0, N, size=N)
-    theta_boot[b] = optimize.minimize(lambda th: -log_likelihood(th, y[idx], sigma_y[idx]),
+    theta_boot[b] = optimize.minimize(lambda th: -log_likelihood(th, y[idx]),
                                       x0=theta_ml, method="Nelder-Mead").x
 theta_boot[:, 1] = np.abs(theta_boot[:, 1])      # the likelihood only depends on eps^2; fold negative solutions back
 

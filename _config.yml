@@ -25,11 +25,11 @@ parse:
     - tasklist
 
 html:
-  use_repository_button: false
-  use_issues_button: false
+  use_repository_button: true
+  use_issues_button: true
   use_edit_page_button: false
   home_page_in_navbar: true
-  baseurl: ""
+  baseurl: "https://sjoertvv.github.io/BASTA-lecture-notes/"
 
 launch_buttons:
   notebook_interface: "classic"
@@ -41,7 +41,8 @@ sphinx:
     html_static_path: [_static]
     html_css_files: [custom.css]
     html_theme_options:
-      repository_url: ""
+      repository_url: https://github.com/sjoertvv/BASTA-lecture-notes
+      repository_branch: main
       use_download_button: true
       use_fullscreen_button: true
       show_toc_level: 2
